@@ -5,14 +5,17 @@ define [
 	'vectr'
 	'buzz'
 	'cs!shapes/player'
+	'cs!shapes/enemy'
 	'cs!shapes/joystick'
-], (Vectr, Buzz, Player, Joystick) ->
+], (Vectr, Buzz, Player, Enemy, Joystick) ->
 	
 	class Game extends Vectr.Scene
 		constructor: ->
 			super()
 			
 			@clearColor = 'rgba(0, 0, 0, 0.2)'
+
+			@level = 1
 
 			# Set up player
 			@player = new Player(Vectr.WIDTH / 2, Vectr.HEIGHT / 2)
@@ -23,12 +26,32 @@ define [
 			@add(@playerBullets)
 
 			i = 20;
-			while (i -= 1)
+			while i -= 1
 				b = new Vectr.Shape(0, 0, "circle", 5)
 				b.solid = true
 				b.speed = 600
 				b.active = false
-				@playerBullets.add b
+				@playerBullets.add(b)
+
+			# Set up basic enemies
+			@enemies = new Vectr.Pool()
+			@add(@enemies)
+
+			i = 50
+			while i -= 1
+				e = new Enemy(0, 0)
+				e.target = @player
+				e.active = false
+				@enemies.add(e)
+
+			# particle emitters
+			@particles = new Vectr.Pool()
+			@add(@particles)
+
+			i = 5;
+			while i--
+				e = new Vectr.Emitter(30, 'circle', 4, 'rgba(255, 0, 0, 0.9)')
+				@particles.add(e)
 
 			# Set up virtual joysticks
 			@leftStick = new Joystick(0, 0)
@@ -41,6 +64,31 @@ define [
 
 			@leftTouchIndex = null	# Index of the touch that's on the left side of the screen
 			@rightTouchIndex = null 	# Index of the touch that's on the right side of the screen
+
+			@setup()
+
+		###
+		Initialize a new level by spawning a number of enemies, moving the player character to the center, etc.
+		###
+		setup: ->
+			@player.position.x = Vectr.WIDTH / 2
+			@player.position.y = Vectr.HEIGHT / 2
+
+			i = @level * 2 + 10
+
+			while i -= 1
+				e = @enemies.activate()
+
+				if e?
+					e.position.x = Math.random() * Vectr.WIDTH
+					e.position.y = Math.random() * Vectr.HEIGHT
+
+					while e.collidesWith({ position: { x: Vectr.WIDTH / 2, y: Vectr.HEIGHT / 2 }, size: 100 })
+						e.position.x = Math.random() * Vectr.WIDTH
+						e.position.y = Math.random() * Vectr.HEIGHT
+
+					e.active = true
+
 
 		update: (delta) ->
 			super(delta)
@@ -61,13 +109,35 @@ define [
 
 			# Update bullets
 			i = @playerBullets.length
-			while (i--) 
+			while i--
 				b = @playerBullets.at(i)
 
 				if b? and (b.position.y > Vectr.HEIGHT or b.position.y < 0 or b.position.x > Vectr.WIDTH or b.position.x < 0)
 					@playerBullets.deactivate(i)
+					continue
 
-				# TODO: collision detection vs. enemies
+				# Collision detection vs. enemies
+				j = @enemies.length
+				while j--
+					e = @enemies.at(j)
+					if e? and e.collidesWith(b)
+						particles = this.particles.activate();
+						if particles? then particles.start(@playerBullets.at(i).position.x, @playerBullets.at(i).position.y)
+						
+						Vectr.playSfx('explosion')
+
+						@enemies.deactivate(j)
+						@playerBullets.deactivate(i)
+						continue
+
+					# TODO: actual game over screen
+					if e? and e.collidesWith(@player)
+						@setup()
+
+			# Level complete condition
+			if @enemies.length is 0
+				@level += 1
+				@setup()
 
 		onKeyDown: (key) ->
 			switch key
