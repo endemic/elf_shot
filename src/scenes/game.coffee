@@ -13,7 +13,7 @@ define [
 		constructor: ->
 			super()
 			
-			@clearColor = 'rgba(0, 0, 0, 0.2)'
+			@clearColor = 'rgba(0, 0, 0, 0.15)'
 
 			@level = 1
 
@@ -68,12 +68,16 @@ define [
 			@setup()
 
 		###
-		Initialize a new level by spawning a number of enemies, moving the player character to the center, etc.
+		@description Initialize a new level by spawning a number of enemies, moving the player character to the center, etc.
 		###
 		setup: ->
 			@player.position.x = Vectr.WIDTH / 2
 			@player.position.y = Vectr.HEIGHT / 2
 
+			@playerBullets.deactivateAll()
+			@enemies.deactivateAll()
+
+			# number of enemies
 			i = @level * 2 + 10
 
 			while i -= 1
@@ -83,7 +87,7 @@ define [
 					e.position.x = Math.random() * Vectr.WIDTH
 					e.position.y = Math.random() * Vectr.HEIGHT
 
-					while e.collidesWith({ position: { x: Vectr.WIDTH / 2, y: Vectr.HEIGHT / 2 }, size: 100 })
+					while e.collidesWith({ position: { x: Vectr.WIDTH / 2, y: Vectr.HEIGHT / 2 }, size: 200 })
 						e.position.x = Math.random() * Vectr.WIDTH
 						e.position.y = Math.random() * Vectr.HEIGHT
 
@@ -101,8 +105,8 @@ define [
 
 				if b?
 					Vectr.playSfx('shoot')
-					b.velocity.x = Math.cos(@player.rotation * Math.PI / 180)
-					b.velocity.y = Math.sin(@player.rotation * Math.PI / 180)
+					b.velocity.x = Math.cos(@player.rotation)
+					b.velocity.y = Math.sin(@player.rotation)
 					b.position.x = @player.position.x + b.velocity.x * @player.size / 2
 					b.position.y = @player.position.y + b.velocity.y * @player.size / 2
 
@@ -112,7 +116,9 @@ define [
 			while i--
 				b = @playerBullets.at(i)
 
-				if b? and (b.position.y > Vectr.HEIGHT or b.position.y < 0 or b.position.x > Vectr.WIDTH or b.position.x < 0)
+				if not b? then continue
+
+				if b.position.y > Vectr.HEIGHT or b.position.y < 0 or b.position.x > Vectr.WIDTH or b.position.x < 0
 					@playerBullets.deactivate(i)
 					continue
 
@@ -120,9 +126,12 @@ define [
 				j = @enemies.length
 				while j--
 					e = @enemies.at(j)
-					if e? and e.collidesWith(b)
+
+					if not e? then continue
+
+					if e.collidesWith(b)
 						particles = this.particles.activate();
-						if particles? then particles.start(@playerBullets.at(i).position.x, @playerBullets.at(i).position.y)
+						if particles? then particles.start(b.position.x, b.position.y)
 						
 						Vectr.playSfx('explosion')
 
@@ -130,9 +139,11 @@ define [
 						@playerBullets.deactivate(i)
 						continue
 
-					# TODO: actual game over screen
-					if e? and e.collidesWith(@player)
-						@setup()
+			j = @enemies.length
+			while j--
+				e = @enemies.at(j)
+				if e? and e.collidesWith(@player)
+					@setup()
 
 			# Level complete condition
 			if @enemies.length is 0
@@ -182,13 +193,13 @@ define [
 
 			if @leftTouchIndex != null
 				angle = Math.atan2(points[@leftTouchIndex].y - @leftStick.position.y, points[@leftTouchIndex].x - @leftStick.position.x)
-				@leftStick.rotation = angle * 180 / Math.PI + 180
+				@leftStick.rotation = angle
 				@player.velocity.x = Math.cos(angle)
 				@player.velocity.y = Math.sin(angle)
 
 			if @rightTouchIndex != null
 				angle = Math.atan2(points[@rightTouchIndex].y - @rightStick.position.y, points[@rightTouchIndex].x - @rightStick.position.x)
-				@rightStick.rotation = angle * 180 / Math.PI + 180
+				@rightStick.rotation = angle
 				@player.shooting.x = Math.cos(angle)
 				@player.shooting.y = Math.sin(angle)
 
