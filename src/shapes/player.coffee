@@ -14,9 +14,12 @@ define [
 			@lineWidth = 3
 			@rotation = 270 * 180 / Math.PI
 
-			@shootRate = 0.15
+			@shootRate = 0.25
 			@timeout = 0
 			@shooting = 
+				x: 0
+				y: 0
+			@angle = 
 				x: 0
 				y: 0
 

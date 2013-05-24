@@ -5,9 +5,10 @@ define [
 	'vectr'
 	'buzz'
 	'cs!shapes/player'
-	'cs!shapes/enemy'
 	'cs!shapes/joystick'
-], (Vectr, Buzz, Player, Enemy, Joystick) ->
+	'cs!shapes/enemy'
+	'cs!shapes/enemy-shot'
+], (Vectr, Buzz, Player, Joystick, Enemy, EnemyShot) ->
 	
 	class Game extends Vectr.Scene
 		constructor: ->
@@ -29,9 +30,19 @@ define [
 			while i -= 1
 				b = new Vectr.Shape(0, 0, "circle", 5)
 				b.solid = true
-				b.speed = 600
+				b.speed = 650
 				b.active = false
 				@playerBullets.add(b)
+
+			# Set up enemy projectiles
+			@enemyBullets = new Vectr.Pool()
+			@add(@enemyBullets)
+
+			i = 20;
+			while i -= 1
+				b = new EnemyShot(0, 0, "shooter", @player)
+				b.active = false
+				@enemyBullets.add(b)
 
 			# Set up basic enemies
 			@enemies = new Vectr.Pool()
@@ -39,7 +50,7 @@ define [
 
 			i = 50
 			while i -= 1
-				e = new Enemy(0, 0)
+				e = new Enemy(0, 0, 'shooter')
 				e.target = @player
 				e.active = false
 				@enemies.add(e)
@@ -50,7 +61,7 @@ define [
 
 			i = 5;
 			while i--
-				e = new Vectr.Emitter(30, 'circle', 4, 'rgba(255, 0, 0, 0.9)')
+				e = new Vectr.Emitter(30, 0.5, 'circle', 4, 'rgba(255, 0, 0, 1)')
 				@particles.add(e)
 
 			# Set up virtual joysticks
@@ -75,6 +86,7 @@ define [
 			@player.position.y = Vectr.HEIGHT / 2
 
 			@playerBullets.deactivateAll()
+			@enemyBullets.deactivateAll()
 			@enemies.deactivateAll()
 
 			# number of enemies
@@ -83,94 +95,148 @@ define [
 			while i -= 1
 				e = @enemies.activate()
 
-				if e?
+				if e != null
+					e.reset()
 					e.position.x = Math.random() * Vectr.WIDTH
 					e.position.y = Math.random() * Vectr.HEIGHT
 
+					# Don't allow enemies to be spawned within a 200 px square of the player
 					while e.collidesWith({ position: { x: Vectr.WIDTH / 2, y: Vectr.HEIGHT / 2 }, size: 200 })
 						e.position.x = Math.random() * Vectr.WIDTH
 						e.position.y = Math.random() * Vectr.HEIGHT
 
 					e.active = true
 
-
 		update: (delta) ->
 			super(delta)
 
-			# Handle shooting
+			# Handle player shooting
 			@player.timeout += delta
 			if (@player.shooting.x != 0 or @player.shooting.y != 0) and @player.timeout > @player.shootRate
 				@player.timeout = 0
 				b = @playerBullets.activate()
 
-				if b?
+				if b != null
 					Vectr.playSfx('shoot')
 					b.velocity.x = Math.cos(@player.rotation)
 					b.velocity.y = Math.sin(@player.rotation)
 					b.position.x = @player.position.x + b.velocity.x * @player.size / 2
 					b.position.y = @player.position.y + b.velocity.y * @player.size / 2
 
-
-			# Update bullets
+			# Update player bullets
 			i = @playerBullets.length
 			while i--
 				b = @playerBullets.at(i)
 
-				if not b? then continue
+				if b is null then continue
 
 				if b.position.y > Vectr.HEIGHT or b.position.y < 0 or b.position.x > Vectr.WIDTH or b.position.x < 0
 					@playerBullets.deactivate(i)
 					continue
 
-				# Collision detection vs. enemies
+				# Collision detection (player shots vs. enemies)
 				j = @enemies.length
 				while j--
 					e = @enemies.at(j)
 
-					if not e? then continue
+					if e is null then continue
 
 					if e.collidesWith(b)
 						particles = this.particles.activate();
-						if particles? then particles.start(b.position.x, b.position.y)
+						if particles != null
+							particles.color.red = e.color.red
+							particles.color.green = e.color.green
+							particles.color.blue = e.color.blue
+							particles.start(b.position.x, b.position.y)
 						
 						Vectr.playSfx('explosion')
 
 						@enemies.deactivate(j)
 						@playerBullets.deactivate(i)
-						continue
+						break
 
+			# Update enemies
 			j = @enemies.length
 			while j--
 				e = @enemies.at(j)
-				if e? and e.collidesWith(@player)
+
+				if e is null then continue
+
+				# Handle enemy shooting
+				if e.shooting
+					b = @enemyBullets.activate()
+
+					if b != null
+						e.shooting = false
+						b.type = e.type
+						b.velocity.x = Math.cos(e.rotation)
+						b.velocity.y = Math.sin(e.rotation)
+						b.position.x = e.position.x + b.velocity.x * e.size / 2
+						b.position.y = e.position.y + b.velocity.y * e.size / 2
+
+				# Collision detection (enemies vs. player)
+				if e.collidesWith(@player)
 					@setup()
 
-			# Level complete condition
+			# Update enemy bullets
+			i = @enemyBullets.length
+			while i--
+				b = @enemyBullets.at(i)
+
+				if b is null then continue
+
+				if b.position.y > Vectr.HEIGHT or b.position.y < 0 or b.position.x > Vectr.WIDTH or b.position.x < 0
+					@enemyBullets.deactivate(i)
+					continue
+
+				# Collision detection w/ player
+				if b.collidesWith(@player)
+					@setup()
+
+			# TEMP: Level complete condition
 			if @enemies.length is 0
 				@level += 1
 				@setup()
 
 		onKeyDown: (key) ->
 			switch key
-				when 'w' then @player.velocity.y -= 1
-				when 's' then @player.velocity.y += 1
-				when 'a' then @player.velocity.x -= 1
-				when 'd' then @player.velocity.x += 1
+				when 'w' then @player.angle.y -= 1
+				when 's' then @player.angle.y += 1
+				when 'a' then @player.angle.x -= 1
+				when 'd' then @player.angle.x += 1
+
 				when 'left' then @player.shooting.x -= 1
 				when 'right' then @player.shooting.x += 1
 				when 'up' then @player.shooting.y -= 1
 				when 'down' then @player.shooting.y += 1
 
+			# If "angle" var is set, determine velocity vector
+			if @player.angle.x != 0 or @player.angle.y != 0
+				angle = Math.atan2(@player.angle.y, @player.angle.x)
+				@player.velocity.x = Math.cos(angle)
+				@player.velocity.y = Math.sin(angle)
+			else
+				@player.velocity.x = @player.velocity.y = 0
+
 		onKeyUp: (key) ->
 			switch key
-				when 'w' then @player.velocity.y += 1
-				when 's' then @player.velocity.y -= 1
-				when 'a' then @player.velocity.x += 1
-				when 'd' then @player.velocity.x -= 1
+				when 'w' then @player.angle.y += 1
+				when 's' then @player.angle.y -= 1
+				when 'a' then @player.angle.x += 1
+				when 'd' then @player.angle.x -= 1
+
 				when 'left' then @player.shooting.x += 1
 				when 'right' then @player.shooting.x -= 1
 				when 'up' then @player.shooting.y += 1
 				when 'down' then @player.shooting.y -= 1
+
+			# If "angle" var is set, determine velocity vector
+			if @player.angle.x != 0 or @player.angle.y != 0
+				angle = Math.atan2(@player.angle.y, @player.angle.x)
+				@player.velocity.x = Math.cos(angle)
+				@player.velocity.y = Math.sin(angle)
+			else
+				@player.velocity.x = @player.velocity.y = 0
 
 		onPointStart: (points) ->
 			# Try to get the left/right point indices
@@ -194,8 +260,8 @@ define [
 			if @leftTouchIndex != null
 				angle = Math.atan2(points[@leftTouchIndex].y - @leftStick.position.y, points[@leftTouchIndex].x - @leftStick.position.x)
 				@leftStick.rotation = angle
-				@player.velocity.x = Math.cos(angle)
-				@player.velocity.y = Math.sin(angle)
+				@player.angle.x = Math.cos(angle)
+				@player.angle.y = Math.sin(angle)
 
 			if @rightTouchIndex != null
 				angle = Math.atan2(points[@rightTouchIndex].y - @rightStick.position.y, points[@rightTouchIndex].x - @rightStick.position.x)
@@ -205,7 +271,7 @@ define [
 
 		onPointEnd: (points) ->
 			# TODO: This deactivates both sticks when one touch ends, needs to determine which touch(es) are still valid for a joystick
-			@player.velocity.x = @player.velocity.y = 0
+			@player.angle.x = @player.angle.y = 0
 			@player.shooting.x = @player.shooting.y = 0
 
 			@leftStick.active = false
