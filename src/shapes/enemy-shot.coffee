@@ -47,13 +47,25 @@ define [
 		update: (delta) ->
 			super(delta)
 
+			@lifetime += delta
+
+			###
+			Shots that go off the edge of the screen are deactivated in the main game loop
+			###
+
 			switch @type
 				when 'shooter'
 					# Bounce off edges of screen
 					if @position.x + @size / 2 > Vectr.WIDTH or @position.x - @size / 2 < 0 then @velocity.x *= -1
 					if @position.y + @size / 2 > Vectr.HEIGHT or @position.y - @size / 2 < 0 then @velocity.y *= -1
 				when 'tracker'
-					# Slowly chage velocity towards target
+					# TODO: These values need to have a limit to the amount they can change, otherwise it hits the player every time
 					angle = Math.atan2(@target.position.y - @position.y, @target.position.x - @position.x)
 					@velocity.x = Math.cos(angle)
 					@velocity.y = Math.sin(angle)
+
+		###
+		@description Reset any properties so the projectile can be re-used
+		###
+		reset: ->
+			@lifetime = 0

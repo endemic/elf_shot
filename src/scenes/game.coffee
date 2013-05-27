@@ -50,7 +50,7 @@ define [
 
 			i = 50
 			while i -= 1
-				e = new Enemy(0, 0, 'shooter')
+				e = new Enemy(0, 0, 'mine')
 				e.target = @player
 				e.active = false
 				@enemies.add(e)
@@ -90,7 +90,7 @@ define [
 			@enemies.deactivateAll()
 
 			# number of enemies
-			i = @level * 2 + 10
+			i = Math.round(@level * 1.5)
 
 			while i -= 1
 				e = @enemies.activate()
@@ -185,7 +185,7 @@ define [
 
 				if b is null then continue
 
-				if b.position.y > Vectr.HEIGHT or b.position.y < 0 or b.position.x > Vectr.WIDTH or b.position.x < 0
+				if b.position.y > Vectr.HEIGHT or b.position.y < 0 or b.position.x > Vectr.WIDTH or b.position.x < 0 or b.lifetime > 2
 					@enemyBullets.deactivate(i)
 					continue
 

@@ -11,6 +11,9 @@ Types:
 define [
 	'vectr'
 ], (Vectr) ->
+	distance = (point1, point2) ->
+		return Math.sqrt(Math.pow(point1.x - point2.x, 2) + Math.pow(point1.y - point2.y, 2));
+
 	class Enemy extends Vectr.Shape
 		constructor: (x, y, type) ->
 			super(x, y)
@@ -26,17 +29,28 @@ define [
 						blue: 50
 						alpha: 1
 					@size = 35
-					@speed = 75
+					@speed = @originalSpeed = 75
 					@solid = true
 					@lineWidth = 3
 				when 'shooter'
-					@color = 
+					@color = @originalColor = 
 						red: 50
 						green: 255
 						blue: 50
 						alpha: 1
 					@size = 30
-					@speed = 100
+					@speed = @originalSpeed = 100
+					@solid = true
+					@lineWidth = 3
+				when 'mine'
+					@shape = 'circle'
+					@color = @originalColor = 
+						red: 0
+						green: 255
+						blue: 0
+						alpha: 0.5
+					@size = 20
+					@speed = @originalSpeed = 0
 					@solid = true
 					@lineWidth = 3
 
@@ -63,6 +77,7 @@ define [
 						@rotation = Math.atan2(@target.position.y - @position.y, @target.position.x - @position.x)
 						@velocity.x = Math.cos(@rotation)
 						@velocity.y = Math.sin(@rotation)
+
 				when 'shooter'
 					# Set a "shooting" flag based on logic here
 					@counter += delta
@@ -70,11 +85,20 @@ define [
 						@shooting = true
 						@counter = 0
 
-					# Find angle to target and move towards it
+					# Move away from player if the player gets too close
 					if @target?
 						@rotation = Math.atan2(@target.position.y - @position.y, @target.position.x - @position.x)
-						@velocity.x = Math.cos(@rotation)
-						@velocity.y = Math.sin(@rotation)
+						
+						if distance(@target.position, @position) < 300
+							@velocity.x = -Math.cos(@rotation)
+							@velocity.y = -Math.sin(@rotation)
+						else
+							@velocity.x = 0
+							@velocity.y = 0
+
+				when 'mine'
+					@color.alpha -= @cycle / 255;
+					if @color.alpha >= 0.5 or @color.alpha < 0.1 then @cycle *= -1
 
 			# Enforce position w/in screen bounds
 			if @position.x + @size / 2 > Vectr.WIDTH then @position.x = Vectr.WIDTH - @size / 2
@@ -83,12 +107,7 @@ define [
 			if @position.y - @size / 2 < 0 then @position.y = @size / 2
 
 		reset: ->
-			@color = 
-				red: 255
-				green: 0
-				blue: 50
-				alpha: 1
-
+			@color = @originalColor
+			@speed = @originalSpeed
 			@counter = 0
 			@shooting = false
-			@speed = 75
