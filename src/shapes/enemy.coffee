@@ -53,6 +53,28 @@ define [
 					@speed = @originalSpeed = 0
 					@solid = true
 					@lineWidth = 3
+				when 'factory'
+					@shape = 'circle'
+					@color = @originalColor = 
+						red: 0
+						green: 255
+						blue: 255
+						alpha: 1
+					@size = 20
+					@speed = @originalSpeed = 90
+					@solid = true
+					@lineWidth = 3
+				when 'tank'
+					@shape = 'circle'
+					@color = @originalColor = 
+						red: 255
+						green: 255
+						blue: 0
+						alpha: 1
+					@size = 50
+					@speed = @originalSpeed = 50
+					@solid = true
+					@lineWidth = 3
 
 			@rotation = 270 * 180 / Math.PI
 			@counter = 0
@@ -99,6 +121,51 @@ define [
 				when 'mine'
 					@color.alpha -= @cycle / 255;
 					if @color.alpha >= 0.5 or @color.alpha < 0.1 then @cycle *= -1
+
+				when 'factory'
+					# Set a "shooting" flag based on logic here
+					@counter += delta
+					if @counter > 5
+						@shooting = true
+						@counter = 0
+
+					# TODO: wander logic
+
+				when 'tank'
+					# Choose a random destination to move to
+					# TODO: weight the directions closer to the player
+					if @destination == undefined or distance(@position, @destination) < 1
+						@destination = 
+							x: @position.x
+							y: @position.y
+						
+						axis = Math.random()
+						direction = Math.random()
+						
+						# move along x-axis
+						if axis > 0.5
+							@destination.x += if direction > 0.5 then @size else -@size
+						# move along y-axis
+						else
+							@destination.y += if direction > 0.5 then @size else -@size
+
+						# TODO: Try to consolidate this
+						while @destination.x < 0 or @destination.x > Vectr.WIDTH or @destination.y < 0 or @destination.y > Vectr.HEIGHT
+							axis = Math.random()
+							direction = Math.random()
+							
+							# move along x-axis
+							if axis > 0.5
+								@destination.x += if direction > 0.5 then @size else -@size
+							# move along y-axis
+							else
+								@destination.y += if direction > 0.5 then @size else -@size
+
+						@rotation = Math.atan2(@destination.y - @position.y, @destination.x - @position.x)
+						
+						@velocity =
+							x: Math.cos(@rotation)
+							y: Math.sin(@rotation)
 
 			# Enforce position w/in screen bounds
 			if @position.x + @size / 2 > Vectr.WIDTH then @position.x = Vectr.WIDTH - @size / 2
