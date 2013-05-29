@@ -23,7 +23,7 @@ define [
 			
 			switch @type
 				when 'drone'
-					@color = 
+					@color = @originalColor =
 						red: 255
 						green: 0
 						blue: 50

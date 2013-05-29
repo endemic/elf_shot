@@ -50,7 +50,7 @@ define [
 
 			i = 50
 			while i -= 1
-				e = new Enemy(0, 0, 'mine')
+				e = new Enemy(0, 0, 'drone')
 				e.target = @player
 				e.active = false
 				@enemies.add(e)
