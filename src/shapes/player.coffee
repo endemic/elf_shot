@@ -11,7 +11,7 @@ define [
 			@shape = 'triangle'
 			@size = 40
 			@speed = 150
-			@lineWidth = 3
+			@lineWidth = 2
 			@rotation = 270 * 180 / Math.PI
 
 			@shootRate = 0.25
@@ -22,6 +22,15 @@ define [
 			@angle = 
 				x: 0
 				y: 0
+			@shadow =
+				x: 0
+				y: 0
+				blur: 5
+				color:
+					red: 255
+					green: 255
+					blue: 255
+					alpha: 0.5
 
 		customPath: (context) ->
 			context.beginPath()

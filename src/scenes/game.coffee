@@ -10,6 +10,9 @@ define [
 	'cs!shapes/enemy-shot'
 ], (Vectr, Buzz, Player, Joystick, Enemy, EnemyShot) ->
 	
+	distance = (point1, point2) ->
+		return Math.sqrt(Math.pow(point1.x - point2.x, 2) + Math.pow(point1.y - point2.y, 2));
+
 	class Game extends Vectr.Scene
 		constructor: ->
 			super()
@@ -17,6 +20,7 @@ define [
 			@clearColor = 'rgba(0, 0, 0, 0.15)'
 
 			@level = 1
+			@levelsComplete = []
 
 			# Set up player
 			@player = new Player(Vectr.WIDTH / 2, Vectr.HEIGHT / 2)
@@ -27,7 +31,7 @@ define [
 			@add(@playerBullets)
 
 			i = 20;
-			while i -= 1
+			while i--
 				b = new Vectr.Shape(0, 0, "circle", 5)
 				b.solid = true
 				b.speed = 650
@@ -39,7 +43,7 @@ define [
 			@add(@enemyBullets)
 
 			i = 20;
-			while i -= 1
+			while i--
 				b = new EnemyShot(0, 0, "shooter", @player)
 				b.active = false
 				@enemyBullets.add(b)
@@ -49,8 +53,8 @@ define [
 			@add(@enemies)
 
 			i = 50
-			while i -= 1
-				e = new Enemy(0, 0, 'tank')
+			while i--
+				e = new Enemy(0, 0, 'drone')
 				e.target = @player
 				e.active = false
 				@enemies.add(e)
@@ -63,6 +67,20 @@ define [
 			while i--
 				e = new Vectr.Emitter(30, 0.5, 'circle', 4, 'rgba(255, 0, 0, 1)')
 				@particles.add(e)
+
+			# Starfield in background
+			@stars = new Vectr.Pool()
+			@add(@stars)
+
+			i = 50
+			while i--
+				s = new Vectr.Shape(Math.random() * Vectr.WIDTH, Math.random() * Vectr.HEIGHT, "circle", 5)
+				angle = Math.atan2(s.position.y - Vectr.HEIGHT / 2, s.position.x - Vectr.WIDTH / 2)
+				s.velocity.x = Math.cos(angle)
+				s.velocity.y = Math.sin(angle)
+				s.solid = true
+				s.speed = 100 * Math.random() + 50
+				@stars.add(s)
 
 			# Set up virtual joysticks
 			@leftStick = new Joystick(0, 0)
@@ -82,6 +100,8 @@ define [
 		@description Initialize a new level by spawning a number of enemies, moving the player character to the center, etc.
 		###
 		setup: ->
+			@clearColor = 'rgba(0, 0, 0, 0.15)'
+
 			@player.position.x = Vectr.WIDTH / 2
 			@player.position.y = Vectr.HEIGHT / 2
 
@@ -107,8 +127,31 @@ define [
 
 					e.active = true
 
+			@paused = true
+			setTimeout =>
+				@paused = false
+			, 1000
+
 		update: (delta) ->
+			if @paused is true then return
+
 			super(delta)
+
+			# Update starfield
+			i = @stars.length
+			center = 
+				x: Vectr.WIDTH / 2
+				y: Vectr.HEIGHT / 2
+			avg = (Vectr.WIDTH + Vectr.HEIGHT) / 2
+			while i--
+				s = @stars.at(i)
+				# Make larger the farther the stars get from the center
+				s.scale = distance(s.position, center) / avg * 2
+
+				if s.position.y > Vectr.HEIGHT or s.position.y < 0 or s.position.x > Vectr.WIDTH or s.position.x < 0
+					s.position.x = center.x
+					s.position.y = center.y
+					s.scale = 0
 
 			# Handle player shooting
 			@player.timeout += delta

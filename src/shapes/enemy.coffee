@@ -81,6 +81,33 @@ define [
 			@cycle = 1
 			@shooting = false
 
+		customPath: (context) ->
+			context.beginPath()
+
+			if @type is 'drone'
+				# Circle
+				context.arc(1, 0, @size / 2, 360, false)
+
+				# Inner square
+				context.moveTo(@size / 4.25, @size / 4.25);
+				context.lineTo(@size / 4.25, -@size / 4.25);
+				context.lineTo(-@size / 4.25, -@size / 4.25);
+				context.lineTo(-@size / 4.25, @size / 4.25);
+				context.lineTo(@size / 4.25, @size / 4.25);
+			else if @type is 'shooter'
+				# Circle
+				context.arc(1, 0, @size / 2, 360, false)
+
+				# Inner triangle
+				context.moveTo(@size / 2 * Math.cos(0), @size / 2 * Math.sin(0))
+				context.lineTo(@size / 2 * Math.cos(120 * Math.PI / 180), @size / 2 * Math.sin(120 * Math.PI / 180))
+				context.lineTo(@size / 2 * Math.cos(240 * Math.PI / 180), @size / 2 * Math.sin(240 * Math.PI / 180))
+				context.lineTo(@size / 2 * Math.cos(0), @size / 2 * Math.sin(0))
+				
+			context.closePath()
+			context.strokeStyle = 'rgba(' + @color.red + ', ' + @color.green + ', ' + @color.blue + ', ' + @color.alpha + ')'
+			context.stroke()
+
 		update: (delta) ->
 			super(delta)
 
