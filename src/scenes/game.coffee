@@ -20,7 +20,7 @@ define [
 			@clearColor = 'rgba(0, 0, 0, 0.15)'
 
 			@level = 1
-			@levelsComplete = []
+			@setupFlag = null
 
 			# Set up player
 			@player = new Player(Vectr.WIDTH / 2, Vectr.HEIGHT / 2)
@@ -65,22 +65,8 @@ define [
 
 			i = 5;
 			while i--
-				e = new Vectr.Emitter(30, 0.5, 'circle', 4, 'rgba(255, 0, 0, 1)')
+				e = new Vectr.Emitter('circle', 4, 'rgba(255, 0, 0, 1)', 30, 0.5)
 				@particles.add(e)
-
-			# Starfield in background
-			@stars = new Vectr.Pool()
-			@add(@stars)
-
-			i = 50
-			while i--
-				s = new Vectr.Shape(Math.random() * Vectr.WIDTH, Math.random() * Vectr.HEIGHT, "circle", 5)
-				angle = Math.atan2(s.position.y - Vectr.HEIGHT / 2, s.position.x - Vectr.WIDTH / 2)
-				s.velocity.x = Math.cos(angle)
-				s.velocity.y = Math.sin(angle)
-				s.solid = true
-				s.speed = 100 * Math.random() + 50
-				@stars.add(s)
 
 			# Set up virtual joysticks
 			@leftStick = new Joystick(0, 0)
@@ -100,7 +86,8 @@ define [
 		@description Initialize a new level by spawning a number of enemies, moving the player character to the center, etc.
 		###
 		setup: ->
-			@clearColor = 'rgba(0, 0, 0, 0.15)'
+			@setupFlag = null
+			# @clearColor = 'rgba(0, 0, 0, 0.15)'
 
 			@player.position.x = Vectr.WIDTH / 2
 			@player.position.y = Vectr.HEIGHT / 2
@@ -136,22 +123,6 @@ define [
 			if @paused is true then return
 
 			super(delta)
-
-			# Update starfield
-			i = @stars.length
-			center = 
-				x: Vectr.WIDTH / 2
-				y: Vectr.HEIGHT / 2
-			avg = (Vectr.WIDTH + Vectr.HEIGHT) / 2
-			while i--
-				s = @stars.at(i)
-				# Make larger the farther the stars get from the center
-				s.scale = distance(s.position, center) / avg * 2
-
-				if s.position.y > Vectr.HEIGHT or s.position.y < 0 or s.position.x > Vectr.WIDTH or s.position.x < 0
-					s.position.x = center.x
-					s.position.y = center.y
-					s.scale = 0
 
 			# Handle player shooting
 			@player.timeout += delta
@@ -237,9 +208,11 @@ define [
 					@setup()
 
 			# TEMP: Level complete condition
-			if @enemies.length is 0
-				@level += 1
-				@setup()
+			if @enemies.length is 0 and @setupFlag is null
+				@setupFlag = setTimeout =>	
+					@level += 1
+					@setup()
+				, 1000
 
 		onKeyDown: (key) ->
 			switch key
