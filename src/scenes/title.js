@@ -10,7 +10,9 @@
             font: '40px monospace',
             color: 'rgba(255, 255, 255, 0.8)'
         }))
-    }
+    };
+
+    TitleScene.prototype = new Arcadia.Scene();
 
     TitleScene.prototype.onKeyDown = function(key) {
         Arcadia.changeScene(Game);

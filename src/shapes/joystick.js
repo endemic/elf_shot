@@ -15,6 +15,8 @@
         };
     }
 
+    Joystick.prototype = new Arcadia.Shape();
+
     Joystick.prototype.path = function (context) {
         context.beginPath();
         context.arc(0, 0, this.size / 2, 360, false);

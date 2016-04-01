@@ -1,31 +1,55 @@
 <!doctype html>
 <html>
 <head>
-	<title>Yajirushi</title>
-	<meta http-equiv="Content-Type" content="text/html;charset=utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ELF SHOT</title>
+  <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-   	<!-- Launch in "fullscreen" mode if from home screen -->
-    <meta name="apple-mobile-web-app-capable" content="yes">  
-  
-	<!-- controls the appearance of the status bar in full-screen mode -->  
-	<meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <!-- Launch in "fullscreen" mode if from home screen -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
 
-	<link rel="apple-touch-icon-precomposed" sizes="72x72" href="assets/images/icons/icon-72.png">
+  <!-- controls the appearance of the status bar in full-screen mode -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
 
-	<style type="text/css">
-	body {
-		background: #222;
-		padding: 0; 
-		margin: 0; 
-		-webkit-touch-callout: none;
-		-webkit-user-select: none;
-		-moz-user-select: none;
-		-ms-user-select: none;
-		user-select: none;
-	}
-	</style>
-	<script data-main="src/main" src="lib/require.js"></script>
+  <link rel="apple-touch-icon-precomposed" sizes="72x72" href="assets/images/icons/icon-72.png">
+
+  <style type="text/css">
+    body {
+      background: #222;
+      padding: 0;
+      margin: 0;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
+  </style>
+
+	<!-- Engine -->
+  <script src="node_modules/arcadia/dist/arcadia.js"></script>
+
+	<!-- Scenes -->
+  <script src="src/scenes/title.js"></script>
+  <script src="src/scenes/game.js"></script>
+
+	<!-- Objects -->
+  <script src="src/shapes/enemy-shot.js"></script>
+  <script src="src/shapes/enemy.js"></script>
+  <script src="src/shapes/joystick.js"></script>
+  <script src="src/shapes/player.js"></script>
+
+  <script>
+    window.onload = function () {
+        var game = new Arcadia.Game({
+          width: 667,
+          height: 375,
+          scene: GameScene,
+          scaleToFit: false,
+        });
+    };
+  </script>
+
 </head>
 <body>
 

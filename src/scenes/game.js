@@ -1,185 +1,194 @@
 (function (root) {
     'use strict';
 
-    var Game = function () {
-        var b, e, i;
-        Arcadia.Scene.apply(this);
-        this.clearColor = 'rgba(0, 0, 0, 0.15)';
+    var GameScene = function () {
+        Arcadia.Scene.apply(this, arguments);
+
+        // this.color = 'rgba(0, 0, 0, 0.15)';
+        this.color = 'black';
         this.level = 1;
-        this.player = new Player(0, 0);
+        this.player = new Player();
         this.add(this.player);
+
         this.playerBullets = new Arcadia.Pool();
         this.add(this.playerBullets);
-        i = 20;
-        while (i -= 1) {
-            b = new Arcadia.Shape(0, 0, "circle", 5);
 
-            b.solid = true;
+        var i = 20;
+        var b;
+        var e;
+        while (i -= 1) {
+            b = new Arcadia.Shape({
+                vertices: 0,
+                size: {width: 5, height: 5}
+            });
             b.speed = 650;
-            b.active = false;
             this.playerBullets.add(b);
         }
+
         this.enemyBullets = new Arcadia.Pool();
         this.add(this.enemyBullets);
+
         i = 20;
         while (i -= 1) {
-            b = new EnemyShot(0, 0, "shooter", this.player);
-            b.active = false;
+            b = new EnemyShot({
+                type: 'shooter',
+                target: this.player
+            });
             this.enemyBullets.add(b);
         }
+
         this.enemies = new Arcadia.Pool();
         this.add(this.enemies);
+
         i = 50;
         while (i -= 1) {
-            e = new Enemy(0, 0, 'drone');
-            e.target = this.player;
-            e.active = false;
+            e = new Enemy({
+                type: 'drone',
+                target: this.player
+            });
             this.enemies.add(e);
         }
+
         this.particles = new Arcadia.Pool();
         this.add(this.particles);
+
         i = 5;
         while (i--) {
-            e = new Arcadia.Emitter(30, 0.5, 'circle', 4, 'rgba(255, 0, 0, 1)');
+            e = new Arcadia.Emitter(function () {
+                return new Arcadia.Shape({
+                    size: {width: 4, height: 4},
+                    color: 'rgba(255, 0, 0, 1)',
+                    vertices: 0
+                });
+            }, 30);
+            e.duration = 0.5
             this.particles.add(e);
         }
-        this.leftStick = new Joystick(0, 0);
-        this.leftStick.active = false;
+
+        this.leftStick = new Joystick();
         this.add(this.leftStick);
-        this.rightStick = new Joystick(0, 0);
-        this.rightStick.active = false;
+        this.deactivate(this.leftStick);
+
+        this.rightStick = new Joystick();
         this.add(this.rightStick);
+        this.deactivate(this.rightStick);
+
         this.leftTouchIndex = null;
         this.rightTouchIndex = null;
+
         this.setup();
     }
 
+    GameScene.prototype = new Arcadia.Scene();
 
-    /*
-            @description Initialize a new level by spawning a number of enemies, moving the player character to the center, etc.
+    /**
+     * @description Initialize a new level by spawning a number of enemies, moving the player character to the center, etc.
      */
+    GameScene.prototype.setup = function () {
+        this.player.position = {x: 0, y: 0};
 
-    Game.prototype.setup = function () {
-        var e, i, results;
-        this.player.position.x = Arcadia.WIDTH / 2;
-        this.player.position.y = Arcadia.HEIGHT / 2;
         this.playerBullets.deactivateAll();
         this.enemyBullets.deactivateAll();
         this.enemies.deactivateAll();
-        i = Math.round(this.level * 1.5);
-        results = [];
-        while (i -= 1) {
+
+        var i = Math.round(this.level * 1.5);
+        var e;
+
+        while (i--) {
             e = this.enemies.activate();
-            if (e !== null) {
-                e.reset();
-                e.position.x = Math.random() * Arcadia.WIDTH;
-                e.position.y = Math.random() * Arcadia.HEIGHT;
-                while (e.collidesWith({
-                        position: {
-                            x: Arcadia.WIDTH / 2,
-                            y: Arcadia.HEIGHT / 2
-                        },
-                        size: 200
-                    })) {
-                    e.position.x = Math.random() * Arcadia.WIDTH;
-                    e.position.y = Math.random() * Arcadia.HEIGHT;
-                }
-                results.push(e.active = true);
-            } else {
-                results.push(void 0);
+            while (e.collidesWith({position: {x: 0, y: 0}, size: {width: 200, height: 200}})) {
+                e.position = {
+                    x: Arcadia.random(-this.size.width / 2, this.size.width / 2),
+                    y: Arcadia.random(-this.size.height / 2, this.size.height / 2)
+                };
             }
         }
-        return results;
     };
 
-    Game.prototype.update = function(delta) {
+    GameScene.prototype.update = function(delta) {
+        Arcadia.Scene.prototype.update.call(this, delta);
         var b, e, i, j, particles;
-        Game.__super__.update.call(this, delta);
+
         this.player.timeout += delta;
-        if ((this.player.shooting.x !== 0 || this.player.shooting.y !== 0) && this.player.timeout > this.player.shootRate) {
+
+        if ((this.player.shooting.x !== 0 || this.player.shooting.y !== 0) &&
+            this.player.timeout > this.player.shootRate) {
             this.player.timeout = 0;
+
             b = this.playerBullets.activate();
-            if (b !== null) {
-                Arcadia.playSfx('shoot');
-                b.velocity.x = Math.cos(this.player.rotation);
-                b.velocity.y = Math.sin(this.player.rotation);
-                b.position.x = this.player.position.x + b.velocity.x * this.player.size / 2;
-                b.position.y = this.player.position.y + b.velocity.y * this.player.size / 2;
-            }
+            //sona.playSfx('shoot');
+            b.velocity.x = Math.cos(this.player.rotation);
+            b.velocity.y = Math.sin(this.player.rotation);
+            b.position.x = this.player.position.x + b.velocity.x * this.player.size.width / 2;
+            b.position.y = this.player.position.y + b.velocity.y * this.player.size.height / 2;
         }
+
         i = this.playerBullets.length;
         while (i--) {
             b = this.playerBullets.at(i);
-            if (b === null) {
-                continue;
-            }
-            if (b.position.y > Arcadia.HEIGHT || b.position.y < 0 || b.position.x > Arcadia.WIDTH || b.position.x < 0) {
+
+            if (b.position.y > this.size.height / 2 || b.position.y < -this.size.height / 2 ||
+                b.position.x > this.size.width / 2 || b.position.x < -this.size.width / 2) {
                 this.playerBullets.deactivate(i);
                 continue;
             }
+
             j = this.enemies.length;
             while (j--) {
                 e = this.enemies.at(j);
-                if (e === null) {
-                    continue;
-                }
                 if (e.collidesWith(b)) {
                     particles = this.particles.activate();
-                    if (particles !== null) {
-                        particles.color.red = e.color.red;
-                        particles.color.green = e.color.green;
-                        particles.color.blue = e.color.blue;
-                        particles.start(b.position.x, b.position.y);
-                    }
-                    Arcadia.playSfx('explosion');
+                    particles.color = e.color;
+                    particles.start(b.position.x, b.position.y);
+                    //sona.playSfx('explosion');
                     this.enemies.deactivate(j);
                     this.playerBullets.deactivate(i);
                     break;
                 }
             }
         }
+
         j = this.enemies.length;
         while (j--) {
             e = this.enemies.at(j);
-            if (e === null) {
-                continue;
-            }
             if (e.shooting) {
                 b = this.enemyBullets.activate();
-                if (b !== null) {
-                    e.shooting = false;
-                    b.type = e.type;
-                    b.velocity.x = Math.cos(e.rotation);
-                    b.velocity.y = Math.sin(e.rotation);
-                    b.position.x = e.position.x + b.velocity.x * e.size / 2;
-                    b.position.y = e.position.y + b.velocity.y * e.size / 2;
-                }
+                e.shooting = false;
+                b.type = e.type;
+                b.velocity.x = Math.cos(e.rotation);
+                b.velocity.y = Math.sin(e.rotation);
+                b.position.x = e.position.x + b.velocity.x * e.size.width / 2;
+                b.position.y = e.position.y + b.velocity.y * e.size.height / 2;
             }
+
             if (e.collidesWith(this.player)) {
                 this.setup();
             }
         }
+
         i = this.enemyBullets.length;
         while (i--) {
             b = this.enemyBullets.at(i);
-            if (b === null) {
-                continue;
-            }
-            if (b.position.y > Arcadia.HEIGHT || b.position.y < 0 || b.position.x > Arcadia.WIDTH || b.position.x < 0 || b.lifetime > 2) {
+
+            if (b.position.y > this.size.height / 2 || b.position.y < -this.size.height / 2 ||
+                b.position.x > this.size.width / 2 || b.position.x < -this.size.width / 2 ||
+                b.lifetime > 2) {
                 this.enemyBullets.deactivate(i);
                 continue;
             }
+
             if (b.collidesWith(this.player)) {
                 this.setup();
             }
         }
+
         if (this.enemies.length === 0) {
             this.level += 1;
-            return this.setup();
+            this.setup();
         }
     };
 
-    Game.prototype.onKeyDown = function(key) {
+    GameScene.prototype.onKeyDown = function(key) {
         var angle;
         switch (key) {
             case 'w':
@@ -206,16 +215,18 @@
             case 'down':
                 this.player.shooting.y += 1;
         }
+
         if (this.player.angle.x !== 0 || this.player.angle.y !== 0) {
             angle = Math.atan2(this.player.angle.y, this.player.angle.x);
             this.player.velocity.x = Math.cos(angle);
-            return this.player.velocity.y = Math.sin(angle);
+            this.player.velocity.y = Math.sin(angle);
         } else {
-            return this.player.velocity.x = this.player.velocity.y = 0;
+            this.player.velocity.x = 0;
+            this.player.velocity.y = 0;
         }
     };
 
-    Game.prototype.onKeyUp = function(key) {
+    GameScene.prototype.onKeyUp = function(key) {
         var angle;
         switch (key) {
             case 'w':
@@ -242,16 +253,19 @@
             case 'down':
                 this.player.shooting.y -= 1;
         }
+
         if (this.player.angle.x !== 0 || this.player.angle.y !== 0) {
             angle = Math.atan2(this.player.angle.y, this.player.angle.x);
             this.player.velocity.x = Math.cos(angle);
-            return this.player.velocity.y = Math.sin(angle);
+            this.player.velocity.y = Math.sin(angle);
         } else {
-            return this.player.velocity.x = this.player.velocity.y = 0;
+            this.player.velocity.x = 0;
+            this.player.velocity.y = 0;
         }
     };
 
-    Game.prototype.onPointStart = function(points) {
+    GameScene.prototype.onPointStart = function (points) {
+        Arcadia.Scene.prototype.onPointStart.call(this, points);
         var index, k, len, point, ref, ref1;
         for (index = k = 0, len = points.length; k < len; index = ++k) {
             point = points[index];
@@ -270,11 +284,12 @@
         if (this.rightStick.active === false && this.rightTouchIndex !== null) {
             this.rightStick.active = true;
             this.rightStick.position.x = points[this.rightTouchIndex].x;
-            return this.rightStick.position.y = points[this.rightTouchIndex].y;
+            this.rightStick.position.y = points[this.rightTouchIndex].y;
         }
     };
 
-    Game.prototype.onPointMove = function(points) {
+    GameScene.prototype.onPointMove = function (points) {
+        Arcadia.Scene.prototype.onPointMove.call(this, points);
         var angle;
         if (this.leftTouchIndex !== null) {
             angle = Math.atan2(points[this.leftTouchIndex].y - this.leftStick.position.y, points[this.leftTouchIndex].x - this.leftStick.position.x);
@@ -286,18 +301,20 @@
             angle = Math.atan2(points[this.rightTouchIndex].y - this.rightStick.position.y, points[this.rightTouchIndex].x - this.rightStick.position.x);
             this.rightStick.rotation = angle;
             this.player.shooting.x = Math.cos(angle);
-            return this.player.shooting.y = Math.sin(angle);
+            this.player.shooting.y = Math.sin(angle);
         }
     };
 
-    Game.prototype.onPointEnd = function(points) {
+    GameScene.prototype.onPointEnd = function (points) {
+        Arcadia.Scene.prototype.onPointEnd.call(this, points);
+
         this.player.angle.x = this.player.angle.y = 0;
         this.player.shooting.x = this.player.shooting.y = 0;
         this.leftStick.active = false;
         this.leftTouchIndex = null;
         this.rightStick.active = false;
-        return this.rightTouchIndex = null;
+        this.rightTouchIndex = null;
     };
 
-    root.Game = Game;
+    root.GameScene = GameScene;
 }(window));
