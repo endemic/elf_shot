@@ -1,8 +1,29 @@
 TODO
 =====
 
-* Detect which point (left or right) has ended when using virtual joysticks
-* Modify "homing" shots to either be slower/destroyable or else not zoom in quite as fast on the player
-* Create 'tank' and 'factory' enemy types
-* Figure out a way for enemies to spawn in deterministic patterns - either hard-code layouts, or programmatically place
-	based on the # of total enemies in a level
+[ ] Determine enemy types
+	* Slow, randomly moving enemy - either indistructible or very tough
+	* Generic enemy; medium speed, always moves toward player
+	* Immobile barrier - can be destroyed, but touching it is fatal
+	* Spawner - Avoids player and creates more baddies
+	* Spawner lvl.2 - randomly moves while creating more baddies
+	* Wizard - shoots projectiles at player's current position
+	* Wizard lvl.2 - shoots slower, homing projectiles
+
+-> Note: "random" movement must be calculated by some sort of seed value, so as
+		 to be deterministic
+
+	Sprites:
+	* Goblin
+	* Bat
+	* Spikes
+	* Skeleton
+	* Dark Knight
+	* Imp
+	* Ghost
+[ ] Create algorithm to place enemies in a deterministic pattern
+[ ] See how much memory it takes to store player input
+
+* Could have the exit immediately visible, but only by killing enemies does the
+  player refill their life bar.
+* Life potions drop every nth enemy, where `n` slowly increases

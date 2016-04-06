@@ -111,7 +111,8 @@
 
         this.player.timeout += delta;
 
-        if ((this.player.shooting.x !== 0 || this.player.shooting.y !== 0) &&
+        // Allow player to shoot
+        if ((this.player.shootVector.x !== 0 || this.player.shootVector.y !== 0) &&
             this.player.timeout > this.player.shootRate) {
             this.player.timeout = 0;
 
@@ -123,6 +124,7 @@
             b.position.y = this.player.position.y + b.velocity.y * this.player.size.height / 2;
         }
 
+        // Update player shots
         i = this.playerBullets.length;
         while (i--) {
             b = this.playerBullets.at(i);
@@ -133,6 +135,7 @@
                 continue;
             }
 
+            // Detect collitions between player shots and enemies
             j = this.enemies.length;
             while (j--) {
                 e = this.enemies.at(j);
@@ -140,7 +143,7 @@
                     particles = this.particles.activate();
                     particles.color = e.color;
                     particles.start(b.position.x, b.position.y);
-                    //sona.playSfx('explosion');
+                    //sona.play('explosion');
                     this.enemies.deactivate(j);
                     this.playerBullets.deactivate(i);
                     break;
@@ -148,9 +151,10 @@
             }
         }
 
-        j = this.enemies.length;
-        while (j--) {
-            e = this.enemies.at(j);
+        // Update enemies
+        i = this.enemies.length;
+        while (i--) {
+            e = this.enemies.at(i);
             if (e.shooting) {
                 b = this.enemyBullets.activate();
                 e.shooting = false;
@@ -162,10 +166,12 @@
             }
 
             if (e.collidesWith(this.player)) {
+                // TODO: show "lose" screen here
                 this.setup();
             }
         }
 
+        // Update enemy shots
         i = this.enemyBullets.length;
         while (i--) {
             b = this.enemyBullets.at(i);
@@ -178,10 +184,12 @@
             }
 
             if (b.collidesWith(this.player)) {
+                // TODO: show "lose" screen here
                 this.setup();
             }
         }
 
+        // Win condition
         if (this.enemies.length === 0) {
             this.level += 1;
             this.setup();
@@ -189,35 +197,34 @@
     };
 
     GameScene.prototype.onKeyDown = function(key) {
-        var angle;
         switch (key) {
             case 'w':
-                this.player.angle.y -= 1;
+                this.player.moveVector.y -= 1;
                 break;
             case 's':
-                this.player.angle.y += 1;
+                this.player.moveVector.y += 1;
                 break;
             case 'a':
-                this.player.angle.x -= 1;
+                this.player.moveVector.x -= 1;
                 break;
             case 'd':
-                this.player.angle.x += 1;
+                this.player.moveVector.x += 1;
                 break;
             case 'left':
-                this.player.shooting.x -= 1;
+                this.player.shootVector.x -= 1;
                 break;
             case 'right':
-                this.player.shooting.x += 1;
+                this.player.shootVector.x += 1;
                 break;
             case 'up':
-                this.player.shooting.y -= 1;
+                this.player.shootVector.y -= 1;
                 break;
             case 'down':
-                this.player.shooting.y += 1;
+                this.player.shootVector.y += 1;
         }
 
-        if (this.player.angle.x !== 0 || this.player.angle.y !== 0) {
-            angle = Math.atan2(this.player.angle.y, this.player.angle.x);
+        if (this.player.moveVector.x !== 0 || this.player.moveVector.y !== 0) {
+            var angle = Math.atan2(this.player.moveVector.y, this.player.moveVector.x);
             this.player.velocity.x = Math.cos(angle);
             this.player.velocity.y = Math.sin(angle);
         } else {
@@ -227,35 +234,34 @@
     };
 
     GameScene.prototype.onKeyUp = function(key) {
-        var angle;
         switch (key) {
             case 'w':
-                this.player.angle.y += 1;
+                this.player.moveVector.y += 1;
                 break;
             case 's':
-                this.player.angle.y -= 1;
+                this.player.moveVector.y -= 1;
                 break;
             case 'a':
-                this.player.angle.x += 1;
+                this.player.moveVector.x += 1;
                 break;
             case 'd':
-                this.player.angle.x -= 1;
+                this.player.moveVector.x -= 1;
                 break;
             case 'left':
-                this.player.shooting.x += 1;
+                this.player.shootVector.x += 1;
                 break;
             case 'right':
-                this.player.shooting.x -= 1;
+                this.player.shootVector.x -= 1;
                 break;
             case 'up':
-                this.player.shooting.y += 1;
+                this.player.shootVector.y += 1;
                 break;
             case 'down':
-                this.player.shooting.y -= 1;
+                this.player.shootVector.y -= 1;
         }
 
-        if (this.player.angle.x !== 0 || this.player.angle.y !== 0) {
-            angle = Math.atan2(this.player.angle.y, this.player.angle.x);
+        if (this.player.moveVector.x !== 0 || this.player.moveVector.y !== 0) {
+            var angle = Math.atan2(this.player.moveVector.y, this.player.moveVector.x);
             this.player.velocity.x = Math.cos(angle);
             this.player.velocity.y = Math.sin(angle);
         } else {
@@ -266,16 +272,21 @@
 
     GameScene.prototype.onPointStart = function (points) {
         Arcadia.Scene.prototype.onPointStart.call(this, points);
-        var index, k, len, point, ref, ref1;
-        for (index = k = 0, len = points.length; k < len; index = ++k) {
+
+        var scene = this;
+        var index = points.length;
+        var point;
+        while (index--) {
             point = points[index];
-            if (this.leftTouchIndex === null && (0 < (ref = point.x) && ref < Arcadia.WIDTH / 2)) {
+
+            if (this.leftTouchIndex === null && (point.x > -scene.size.width / 2 && point.x < 0)) {
                 this.leftTouchIndex = index;
             }
-            if (this.rightTouchIndex === null && (Arcadia.WIDTH / 2 < (ref1 = point.x) && ref1 < Arcadia.WIDTH)) {
+            if (this.rightTouchIndex === null && (point.x > 0 && point.x < scene.size.width / 2)) {
                 this.rightTouchIndex = index;
             }
         }
+
         if (this.leftStick.active === false && this.leftTouchIndex !== null) {
             this.leftStick.active = true;
             this.leftStick.position.x = points[this.leftTouchIndex].x;
@@ -294,25 +305,27 @@
         if (this.leftTouchIndex !== null) {
             angle = Math.atan2(points[this.leftTouchIndex].y - this.leftStick.position.y, points[this.leftTouchIndex].x - this.leftStick.position.x);
             this.leftStick.rotation = angle;
-            this.player.angle.x = Math.cos(angle);
-            this.player.angle.y = Math.sin(angle);
+            this.player.moveVector.x = Math.cos(angle);
+            this.player.moveVector.y = Math.sin(angle);
         }
         if (this.rightTouchIndex !== null) {
             angle = Math.atan2(points[this.rightTouchIndex].y - this.rightStick.position.y, points[this.rightTouchIndex].x - this.rightStick.position.x);
             this.rightStick.rotation = angle;
-            this.player.shooting.x = Math.cos(angle);
-            this.player.shooting.y = Math.sin(angle);
+            this.player.shootVector.x = Math.cos(angle);
+            this.player.shootVector.y = Math.sin(angle);
         }
     };
 
     GameScene.prototype.onPointEnd = function (points) {
         Arcadia.Scene.prototype.onPointEnd.call(this, points);
 
-        this.player.angle.x = this.player.angle.y = 0;
-        this.player.shooting.x = this.player.shooting.y = 0;
+        this.player.moveVector.x = 0;
+        this.player.moveVector.y = 0;
+        this.player.shootVector.x = 0;
+        this.player.shootVector.y = 0;
         this.leftStick.active = false;
-        this.leftTouchIndex = null;
         this.rightStick.active = false;
+        this.leftTouchIndex = null;
         this.rightTouchIndex = null;
     };
 
